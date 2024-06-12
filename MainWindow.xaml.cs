@@ -71,7 +71,7 @@ namespace Had
                 GameCanvas.Children.Remove(food);
             }
 
-            FoodType foodType = (FoodType)rand.Next(0, 3);
+            FoodType foodType = GetRandomFoodType();
             food = new Rectangle
             {
                 Width = 20,
@@ -81,6 +81,23 @@ namespace Had
             };
             GameCanvas.Children.Add(food);
             PositionFood();
+        }
+
+        private FoodType GetRandomFoodType()
+        {
+            int value = rand.Next(0, 100);
+            if (value < 60)
+            {
+                return FoodType.Red;
+            }
+            else if (value < 80)
+            {
+                return FoodType.Yellow;
+            }
+            else
+            {
+                return FoodType.Purple;
+            }
         }
 
         private Brush GetFoodColor(FoodType foodType)
