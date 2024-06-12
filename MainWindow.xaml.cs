@@ -15,12 +15,16 @@ namespace Had
     public partial class MainWindow : Window
     {
         private enum Direction { Up, Down, Left, Right };
+        private enum FoodType { Red, Yellow, Purple };
+
         private Direction currentDirection = Direction.Right;
         private DispatcherTimer gameTimer;
         private List<Rectangle> snakeParts;
         private Rectangle food;
         private Random rand;
         private bool isPaused = false;
+        private bool isInverted = false;
+        private int speedMultiplier = 1;
 
         public MainWindow()
         {
@@ -62,14 +66,36 @@ namespace Had
 
         private void DrawFood()
         {
+            if (food != null)
+            {
+                GameCanvas.Children.Remove(food);
+            }
+
+            FoodType foodType = (FoodType)rand.Next(0, 3);
             food = new Rectangle
             {
                 Width = 20,
                 Height = 20,
-                Fill = Brushes.Red
+                Fill = GetFoodColor(foodType),
+                Tag = foodType
             };
             GameCanvas.Children.Add(food);
             PositionFood();
+        }
+
+        private Brush GetFoodColor(FoodType foodType)
+        {
+            switch (foodType)
+            {
+                case FoodType.Red:
+                    return Brushes.Red;
+                case FoodType.Yellow:
+                    return Brushes.Yellow;
+                case FoodType.Purple:
+                    return Brushes.Purple;
+                default:
+                    return Brushes.Red;
+            }
         }
 
         private void PositionFood()
@@ -96,16 +122,16 @@ namespace Had
             switch (currentDirection)
             {
                 case Direction.Up:
-                    Canvas.SetTop(snakeParts[0], top - 20);
+                    Canvas.SetTop(snakeParts[0], top - 20 * speedMultiplier);
                     break;
                 case Direction.Down:
-                    Canvas.SetTop(snakeParts[0], top + 20);
+                    Canvas.SetTop(snakeParts[0], top + 20 * speedMultiplier);
                     break;
                 case Direction.Left:
-                    Canvas.SetLeft(snakeParts[0], left - 20);
+                    Canvas.SetLeft(snakeParts[0], left - 20 * speedMultiplier);
                     break;
                 case Direction.Right:
-                    Canvas.SetLeft(snakeParts[0], left + 20);
+                    Canvas.SetLeft(snakeParts[0], left + 20 * speedMultiplier);
                     break;
             }
 
@@ -132,8 +158,20 @@ namespace Had
 
             if (headLeft == Canvas.GetLeft(food) && headTop == Canvas.GetTop(food))
             {
-                GrowSnake();
-                PositionFood();
+                FoodType foodType = (FoodType)food.Tag;
+                switch (foodType)
+                {
+                    case FoodType.Red:
+                        GrowSnake();
+                        break;
+                    case FoodType.Yellow:
+                        SpeedBoost();
+                        break;
+                    case FoodType.Purple:
+                        InvertControls();
+                        break;
+                }
+                DrawFood();
             }
         }
 
@@ -147,6 +185,36 @@ namespace Had
             };
             snakeParts.Add(newPart);
             GameCanvas.Children.Add(newPart);
+        }
+
+        private void SpeedBoost()
+        {
+            speedMultiplier = 2;
+            DispatcherTimer resetSpeedTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(3)
+            };
+            resetSpeedTimer.Tick += (s, e) =>
+            {
+                speedMultiplier = 1;
+                resetSpeedTimer.Stop();
+            };
+            resetSpeedTimer.Start();
+        }
+
+        private void InvertControls()
+        {
+            isInverted = true;
+            DispatcherTimer resetInvertTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(3)
+            };
+            resetInvertTimer.Tick += (s, e) =>
+            {
+                isInverted = false;
+                resetInvertTimer.Stop();
+            };
+            resetInvertTimer.Start();
         }
 
         private void GameOver()
@@ -170,19 +238,19 @@ namespace Had
             {
                 case Key.Up:
                     if (currentDirection != Direction.Down)
-                        currentDirection = Direction.Up;
+                        currentDirection = isInverted ? Direction.Down : Direction.Up;
                     break;
                 case Key.Down:
                     if (currentDirection != Direction.Up)
-                        currentDirection = Direction.Down;
+                        currentDirection = isInverted ? Direction.Up : Direction.Down;
                     break;
                 case Key.Left:
                     if (currentDirection != Direction.Right)
-                        currentDirection = Direction.Left;
+                        currentDirection = isInverted ? Direction.Right : Direction.Left;
                     break;
                 case Key.Right:
                     if (currentDirection != Direction.Left)
-                        currentDirection = Direction.Right;
+                        currentDirection = isInverted ? Direction.Left : Direction.Right;
                     break;
             }
         }
